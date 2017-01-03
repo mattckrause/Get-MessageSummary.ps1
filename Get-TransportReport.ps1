@@ -28,21 +28,38 @@
 
     .EXAMPLE
     Generate the HTML report 
-    .\Get-TransportReport.ps1 -Domain "domain.com" -Start "1/1/2016" -End "1/31/2016" -HTMLReport "C:\Temp\Report.html"
+    .\Get-TransportReport.ps1 -Domain "domain.com" -HTMLReport "C:\Temp\Report.html" -StartDate "1/1/2016" -EndDate "1/31/2016"
     #>
+
+#Read in parameters
+param(
+    [parameter(Position=0,Mandatory=$true,HelpMessage="Insert Domain")][string]$Domain,
+    [parameter(Position=1,Mandatory=$false,HelpMessage="HTML Report Location")][string]$HTMLReport="1",
+    [parameter(position=2,Mandatory=$false,HelpMEssage="Start Date")][string]$StartDate="1",
+    [parameter(position=3,Mandatory=$false,HelpMessage="End Date")][string]$EndDate="1"
+    )
+
+#Set Variables
+if ($HTMLReport -eq "1")
+    {
+        $ReportLocation = $PSScriptRoot +"\"
+        $ReportDate = Get-Date
+        $HTMLReportName = "MessageSummary" + $ReportDate.Month + $ReportDate.Day + $ReportDate.Year + $ReportDate.Hour + $ReportDate.Minute + $ReportDate.Second + ".html"
+        $HTMLReport = $ReportLocation+$HTMLReportName
+    }
+$Month = Get-Date -Format "MM"
+$Year = Get-Date -Format "yyyy"
+if ($StartDate -eq "1")
+    {
+        $StartDate = $Month+"/01/"+$Year
+    }
+if ($EndDate -eq "1")
+    {
+        $EndDate = Get-Date -Format "MM/dd/yyyy"
+    }
 
 #Set up Array to hold report data
 $MailUsers = @()
-
-#Set Variables
-$Month = Get-Date -Format "MM"
-$Year = Get-Date -Format "yyyy"
-$StartDate = $Month+"/01/"+$Year
-$EndDate = Get-Date -Format "MM/dd/yyyy"
-$ReportDate = Get-Date
-$Domain = "cloud.csimail.net"
-$HTMLReportLocation = "E:\Temp\"
-$HTMLReport = "MessageSummary" + $ReportDate.Month + $ReportDate.Day + $ReportDate.Year + $ReportDate.Hour + $ReportDate.Minute + $ReportDate.Second
 
 #Look Up Users associated with the domain.
 $DomainUsers = [array](Get-mailbox -ResultSize Unlimited | where {$_.PrimarySMTPAddress -like "*@$Domain"})
@@ -93,5 +110,5 @@ $Post = "<br><br><small><i>Report ran on $ReportDate</i></small>"
 #$MailUsers | Export-Csv -NoTypeInformation -Path $HTMLReportLocation+$HTMLReport+".csv"
 
 #html
-$MailUsers | Select Name,ReceivedMessages,SentMessages | ConvertTo-Html -Head $Header -PreContent $Pre -PostContent $Post | Out-File $HTMLReportLocation$HTMLReport".html"
-write-host "The report was saved at"$HTMLReportLocation$HTMLReport".html" -ForegroundColor Green
+$MailUsers | Select Name,ReceivedMessages,SentMessages | ConvertTo-Html -Head $Header -PreContent $Pre -PostContent $Post | Out-File $HTMLReport
+write-host "The report was saved at"$HTMLReport -ForegroundColor Green
