@@ -59,34 +59,87 @@ if ($EndDate -eq "1")
     }
 
 #Set up Array to hold report data
-$MailUsers = @()
+$Global:MailUsers = @()
 
-#Look Up Users associated with the domain.
-$DomainUsers = [array](Get-mailbox -ResultSize Unlimited | where {$_.PrimarySMTPAddress -like "*@$Domain"})
-
-#Run the report for Received Messages
-ForEach($x in $DomainUsers)
+#----Functions----
+#Function to lookup info for Exchange 2010
+Function 2010Lookup
     {
-        $ReceiveCount = 0
-        $SendCount = 0
-        Write-Host "Looking up user"$x.Name -ForegroundColor Yellow
-        Get-TransportServer | get-MessageTrackingLog -ResultSize Unlimited -Start "$StartDate" -End "$EndDate" -Sender $x.PrimarySMTPAddress -EventID RECEIVE | ? {$_.Source -eq "STOREDRIVER"}| ForEach {$ReceiveCount++}
-        Get-TransportServer | get-MessageTrackingLog -ResultSize Unlimited -Start "$StartDate" -End "$EndDate" -Recipients $x.PrimarySMTPAddress -EventID DELIVER | ForEach {$SendCount++}
-        Write-Host "User Received"$ReceiveCount" messages." -ForegroundColor Red -BackgroundColor Yellow
-        Write-Host "User Sent"$SendCount" messages." -ForegroundColor Red -BackgroundColor Yellow
+        Param ($DomainUsers)
+        write-host "Starting 2010 Version"
+        ForEach($x in $DomainUsers,$StartDate,$EndDate)
+        {
+            $ReceiveCount = 0
+            $SendCount = 0
+            Write-Host "Looking up user"$x.Name -ForegroundColor Yellow
+            Get-TransportServer | get-MessageTrackingLog -ResultSize Unlimited -Start "$StartDate" -End "$EndDate" -Sender $x.PrimarySMTPAddress -EventID RECEIVE | ? {$_.Source -eq "STOREDRIVER"}| ForEach {$SendCount++}
+            Get-TransportServer | get-MessageTrackingLog -ResultSize Unlimited -Start "$StartDate" -End "$EndDate" -Recipients $x.PrimarySMTPAddress -EventID DELIVER | ForEach {$ReceiveCount++}
+            Write-Host "User Received"$ReceiveCount" messages." -ForegroundColor Red -BackgroundColor Yellow
+            Write-Host "User Sent"$SendCount" messages." -ForegroundColor Red -BackgroundColor Yellow
 
-        #write the data to the array object
-        $mailUser = @()
-        $MailUser = New-Object -TypeName PSObject -Property @{
+            #write the data to the array object
+            $MailUser = @()
+            $MailUser = New-Object -TypeName PSObject -Property @{
                         Name = $x.Name
                         ReceivedMessages = $ReceiveCount
                         SentMessages = $SendCount
                         }
         
 
-        #write the data to the report array data
-        $MailUsers += $MailUser
+            #write the data to the report array data
+            $global:MailUsers += MailUser
+        }
     }
+#Function to lookup info for Exchange 2013/2016
+Function 2016Lookup
+    {
+        Param ($DomainUsers,$StartDate,$EndDate)
+        write-host "Starting 2013/2016 Version"
+        ForEach($x in $DomainUsers)
+        {
+            $ReceiveCount = 0
+            $SendCount = 0
+            Write-Host "Looking up user"$x.Name -ForegroundColor Yellow
+            Get-TransportService | get-MessageTrackingLog -ResultSize Unlimited -Start "$StartDate" -End "$EndDate" -Sender $x.PrimarySMTPAddress -EventID RECEIVE | ? {$_.Source -eq "STOREDRIVER"}| ForEach {$SendCount++}
+            Get-TransportService | get-MessageTrackingLog -ResultSize Unlimited -Start "$StartDate" -End "$EndDate" -Recipients $x.PrimarySMTPAddress -EventID DELIVER | ForEach {$ReceiveCount++}
+            Write-Host "User Received"$ReceiveCount" messages." -ForegroundColor Red -BackgroundColor Yellow
+            Write-Host "User Sent"$SendCount" messages." -ForegroundColor Red -BackgroundColor Yellow
+
+            #write the data to the array object
+            $MailUser = @()
+            $MailUser = New-Object -TypeName PSObject -Property @{
+                        Name = $x.Name
+                        ReceivedMessages = $ReceiveCount
+                        SentMessages = $SendCount
+                        }
+        
+
+            #write the data to the report array data
+            $Global:MailUsers += $MailUser
+        }
+    }
+
+
+#Lookup the server we are connected to
+$SessionServer = Get-PSSession | where {$_.State -eq "Opened"}
+Write-Host "Server is $SessionServer"
+#Determine what version of the script to run based on version of Exchange.
+$EXversion = Get-ExchangeServer -Identity $SessionServer.ComputerName
+Write-Host "Exchange Version $EXversion"
+
+If ($EXversion.AdminDisplayVersion -like "Version 14*")
+    {
+        Write-Host "Will use Exchange 2010 Version"
+        2010Lookup -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
+    }
+else
+    {
+        Write-Host "Will use 2013/2016 Version"
+        2016Lookup -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
+    }
+
+#Look Up Users associated with the domain.
+$DomainUsers = [array](Get-mailbox -ResultSize Unlimited | where {$_.PrimarySMTPAddress -like "*@$Domain"})
 
 #Build the HTML Report
 #Set Up HTML Code for report output
