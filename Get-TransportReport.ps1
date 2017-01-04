@@ -84,8 +84,8 @@ $Global:MailUsers = @()
 #Function to lookup info for Exchange 2010
 Function 2010Lookup
     {
-        Param ($DomainUsers)
-        ForEach($x in $DomainUsers,$StartDate,$EndDate)
+        Param ($DomainUsers,$StartDate,$EndDate)
+        ForEach($x in $DomainUsers)
         {
             $ReceiveCount = 0
             $SendCount = 0
@@ -148,7 +148,7 @@ Write-Host "Exchange Version $EXversion"
 
 If ($EXversion.AdminDisplayVersion -like "Version 14*")
     {
-        Write-Host "Will use Exchange 2010 Version"
+        Write-Host "Will use 2010 Version"
         2010Lookup -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
     }
 else
