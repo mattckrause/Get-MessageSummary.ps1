@@ -82,7 +82,7 @@ $Global:MailUsers = @()
 
 #------------------------------------------------------Functions------------------------------------------------------
 #Function to lookup info for Exchange 2010
-Function 2010Lookup
+Function Run2010
     {
         Param ($DomainUsers,$StartDate,$EndDate)
         ForEach($x in $DomainUsers)
@@ -108,7 +108,7 @@ Function 2010Lookup
         }
     }
 #Function to lookup info for Exchange 2013/2016
-Function 2016Lookup
+Function Run2016
     {
         Param ($DomainUsers,$StartDate,$EndDate)
         ForEach($x in $DomainUsers)
@@ -149,12 +149,12 @@ Write-Host "Exchange Version $EXversion"
 If ($EXversion.AdminDisplayVersion -like "Version 14*")
     {
         Write-Host "Will use 2010 Version"
-        2010Lookup -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
+        Run2010 -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
     }
 else
     {
         Write-Host "Will use 2013/2016 Version"
-        2016Lookup -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
+        Run2016 -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
     }
 
 #------------------------------------------------------Build the HTML Report------------------------------------------------------
