@@ -62,9 +62,19 @@ $Year = Get-Date -Format "yyyy"
 
 if ($HTMLReport -eq "1")
     {
-        $ReportLocation = $PSScriptRoot +"\"
-        $HTMLReportName = "MessageSummary" + $ReportDate.Month + $ReportDate.Day + $ReportDate.Year + $ReportDate.Hour + $ReportDate.Minute + $ReportDate.Second + ".html"
-        $HTMLReport = $ReportLocation+$HTMLReportName
+        if(!$PSScriptRoot) #Make $PSSscriptRoot work with PowerShell v2
+            {
+                $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
+                $ReportLocation = $PSScriptRoot +"\"
+                $HTMLReportName = "MessageSummary" + $ReportDate.Month + $ReportDate.Day + $ReportDate.Year + $ReportDate.Hour + $ReportDate.Minute + $ReportDate.Second + ".html"
+                $HTMLReport = $ReportLocation+$HTMLReportName
+            }
+        else
+            {
+                $ReportLocation = $PSScriptRoot +"\"
+                $HTMLReportName = "MessageSummary" + $ReportDate.Month + $ReportDate.Day + $ReportDate.Year + $ReportDate.Hour + $ReportDate.Minute + $ReportDate.Second + ".html"
+                $HTMLReport = $ReportLocation+$HTMLReportName 
+            }
     }
 
 if ($StartDate -eq "1")
@@ -140,20 +150,16 @@ $DomainUsers = [array](Get-mailbox -ResultSize Unlimited | where {$_.PrimarySMTP
 
 #Lookup the server we are connected to
 $SessionServer = Get-PSSession | where {$_.State -eq "Opened"}
-Write-Host "Server is $SessionServer"
 
 #Determine what version of the script to run based on version of Exchange.
 $EXversion = Get-ExchangeServer -Identity $SessionServer.ComputerName
-Write-Host "Exchange Version $EXversion"
 
 If ($EXversion.AdminDisplayVersion -like "Version 14*")
     {
-        Write-Host "Will use 2010 Version"
         Run2010 -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
     }
 else
     {
-        Write-Host "Will use 2013/2016 Version"
         Run2016 -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
     }
 
