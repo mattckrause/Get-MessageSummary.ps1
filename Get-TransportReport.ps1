@@ -1,34 +1,50 @@
 <#
-    .SYNOPSIS
-    Creates a HTML Report containing message transport details for a specific domain and date range 
-   
-    Matt Krause
-    Version 1 December 2016
-    
     .DESCRIPTION
-    
-    This script creates a HTML report showing the following information about an Exchange domain. 
-            
-    * Number of messages sent per user.
-    * Number of messages received per user.
+    Get-TransportReport.ps1
+    Matt Krause 2017
+
+    This script creates a HTML report containing the number of sent and received messages per users of a specific domain 
+    The script report contains the following:
+
+        * Date Range the report covers
+        * User Name
+        * Number of messages sent
+        * Number of messages received
+        * Date the report was run
         
-    This searches all Tranport logs in the environment to pull this information.
-    
+    The script searches all Tranport logs in the environment to pull report information. The script detects which version of Exchange it's being run on and will
+    automatically update the command to work with the version of Exchange
+
     .PARAMETER Domain
     Desired domain for the report data
-    
+    This is a required parameter. You will be prompted to enter the domain if you exclude it
+
+    -Domain "domain.com"
+
+    .PARAMETER HTMLReport
+    Filename to write HTML Report to
+    If no report location paramter is given, the file will be saved to the script location with a file name of "MessageSummary122017121520.html"
+
+    -HTMLReport "C:\Report\reportname.html"
+
     .PARAMETER Start
     Start date for report data
+    If no start date is provided, the script will collect data from the first of the current month
+
+    -StartDate "1/1/2016"
     
     .PARAMETER End
     End date for report data
-    
-    .PARAMETER HTMLReport
-    Filename to write HTML Report to
+    If no end date is provided, the script will collect data up to the current date
 
+    -EndDate "12/31/2016"
+    
     .EXAMPLE
-    Generate the HTML report 
-    .\Get-TransportReport.ps1 -Domain "domain.com" -HTMLReport "C:\Temp\Report.html" -StartDate "1/1/2016" -EndDate "1/31/2016"
+    Generate the HTML report (usind default dates and location):
+    .\Get-TransportReport.ps1 -Domain "domain.com"
+
+    Generate the HTML report (with location and start/end dates):
+      .\Get-TransportReport.ps1 -Domain "domain.com" -HTMLReport "C:\Temp\Report.html" -StartDate "1/1/2016" -EndDate "1/31/2016"
     #>
 
 #Read in parameters
@@ -39,20 +55,23 @@ param(
     [parameter(position=3,Mandatory=$false,HelpMessage="End Date")][string]$EndDate="1"
     )
 
-#Set Variables
+#Set date and report file Variables based on provided parameters
+$ReportDate = Get-Date
+$Month = Get-Date -Format "MM"
+$Year = Get-Date -Format "yyyy"
+
 if ($HTMLReport -eq "1")
     {
         $ReportLocation = $PSScriptRoot +"\"
-        $ReportDate = Get-Date
         $HTMLReportName = "MessageSummary" + $ReportDate.Month + $ReportDate.Day + $ReportDate.Year + $ReportDate.Hour + $ReportDate.Minute + $ReportDate.Second + ".html"
         $HTMLReport = $ReportLocation+$HTMLReportName
     }
-$Month = Get-Date -Format "MM"
-$Year = Get-Date -Format "yyyy"
+
 if ($StartDate -eq "1")
     {
         $StartDate = $Month+"/01/"+$Year
     }
+
 if ($EndDate -eq "1")
     {
         $EndDate = Get-Date -Format "MM/dd/yyyy"
@@ -61,12 +80,11 @@ if ($EndDate -eq "1")
 #Set up Array to hold report data
 $Global:MailUsers = @()
 
-#----Functions----
+#------------------------------------------------------Functions------------------------------------------------------
 #Function to lookup info for Exchange 2010
 Function 2010Lookup
     {
         Param ($DomainUsers)
-        write-host "Starting 2010 Version"
         ForEach($x in $DomainUsers,$StartDate,$EndDate)
         {
             $ReceiveCount = 0
@@ -85,16 +103,14 @@ Function 2010Lookup
                         SentMessages = $SendCount
                         }
         
-
             #write the data to the report array data
-            $global:MailUsers += MailUser
+            $Global:MailUsers += MailUser
         }
     }
 #Function to lookup info for Exchange 2013/2016
 Function 2016Lookup
     {
         Param ($DomainUsers,$StartDate,$EndDate)
-        write-host "Starting 2013/2016 Version"
         ForEach($x in $DomainUsers)
         {
             $ReceiveCount = 0
@@ -112,17 +128,20 @@ Function 2016Lookup
                         ReceivedMessages = $ReceiveCount
                         SentMessages = $SendCount
                         }
-        
-
+            
             #write the data to the report array data
             $Global:MailUsers += $MailUser
         }
     }
+#------------------------------------------------------End Functions------------------------------------------------------
 
+#Look Up Users associated with the domain.
+$DomainUsers = [array](Get-mailbox -ResultSize Unlimited | where {$_.PrimarySMTPAddress -like "*@$Domain"})
 
 #Lookup the server we are connected to
 $SessionServer = Get-PSSession | where {$_.State -eq "Opened"}
 Write-Host "Server is $SessionServer"
+
 #Determine what version of the script to run based on version of Exchange.
 $EXversion = Get-ExchangeServer -Identity $SessionServer.ComputerName
 Write-Host "Exchange Version $EXversion"
@@ -138,10 +157,7 @@ else
         2016Lookup -DomainUsers $DomainUsers -StartDate $StartDate -EndDate $EndDate
     }
 
-#Look Up Users associated with the domain.
-$DomainUsers = [array](Get-mailbox -ResultSize Unlimited | where {$_.PrimarySMTPAddress -like "*@$Domain"})
-
-#Build the HTML Report
+#------------------------------------------------------Build the HTML Report------------------------------------------------------
 #Set Up HTML Code for report output
 $Header = @"
 <style>
@@ -159,9 +175,5 @@ $pre = "<h2><b>Report Data for $Domain</b></h2><br>Data Collected from: $StartDa
 $Post = "<br><br><small><i>Report ran on $ReportDate</i></small>"
 
 #Export the HTML report to a file
-#un-comment the following line to creat a .csv file
-#$MailUsers | Export-Csv -NoTypeInformation -Path $HTMLReportLocation+$HTMLReport+".csv"
-
-#html
 $MailUsers | Select Name,ReceivedMessages,SentMessages | ConvertTo-Html -Head $Header -PreContent $Pre -PostContent $Post | Out-File $HTMLReport
 write-host "The report was saved at"$HTMLReport -ForegroundColor Green
