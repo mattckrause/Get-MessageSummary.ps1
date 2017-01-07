@@ -16,3 +16,5 @@ C:\> .\Get-MessageSummary.ps1 -Domain "domain.com"
 C:> .\Get-MessageSummary.ps1 -Domain "domain.com" -HTMLReport "C:\report.html" -StartDate "1/1/2017" -EndDate "1/7/2017"
 
 Report Output:
+
+![forreadme](https://cloud.githubusercontent.com/assets/23706901/21744219/ae9c3f44-d4ce-11e6-9905-ff14a06f5ba4.png)
