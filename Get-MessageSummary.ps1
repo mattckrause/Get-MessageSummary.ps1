@@ -170,8 +170,6 @@ $Header = @"
 TABLE {border-width: 1px;border-style: solid;border-color: black;border-collapse: collapse;}
 TH {border-width: 1px;padding: 3px;border-style: solid;border-color: black;background-color: #FF4500;}
 TD {border-width: 1px;padding: 3px;border-style: solid;border-color: black;}
-.odd { background-color:#ffffff; }
-.even { background-color:#dddddd; }
 </style>
 <title>
 Monthly Message Report for $Domain
