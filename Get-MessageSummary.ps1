@@ -1,6 +1,6 @@
 <#
     .DESCRIPTION
-    Get-TransportReport.ps1
+    Get-MessageSummary.ps1
     Matt Krause 2017
 
     This script creates a HTML report containing the number of sent and received messages per users of a specific domain 
@@ -41,10 +41,10 @@
     
     .EXAMPLE
     Generate the HTML report (usind default dates and location):
-    .\Get-TransportReport.ps1 -Domain "domain.com"
+    .\Get-MessageSummary.ps1 -Domain "domain.com"
 
     Generate the HTML report (with location and start/end dates):
-      .\Get-TransportReport.ps1 -Domain "domain.com" -HTMLReport "C:\Temp\Report.html" -StartDate "1/1/2016" -EndDate "1/31/2016"
+      .\Get-MessageSummary.ps1 -Domain "domain.com" -HTMLReport "C:\Temp\Report.html" -StartDate "1/1/2016" -EndDate "1/31/2016"
     #>
 
 #Read in parameters
