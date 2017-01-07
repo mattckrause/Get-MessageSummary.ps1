@@ -1,7 +1,7 @@
 # Get-MessageSummary.ps1
 PowerShell script to create an HTML report for the number of messages sent and received per user for a specified domain and date range.
 
-
+Blog Post:
 http://ehloexchange.com/get-messagesummary-ps1-powershell-script/
 
 Parameters:
@@ -13,7 +13,7 @@ Parameters:
 Examples:
 C:\> .\Get-MessageSummary.ps1 -Domain "sampledomain.com"
 
-C:> .\Get-MessageSummary.ps1 -Domain "sampledomain.com" -HTMLReport "C:\report.html" -StartDate "1/1/2017" -EndDate "1/6/2017"
+C:\> .\Get-MessageSummary.ps1 -Domain "sampledomain.com" -HTMLReport "C:\report.html" -StartDate "1/1/2017" -EndDate "1/6/2017"
 
 Report Output:
 
